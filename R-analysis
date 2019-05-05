@@ -1,0 +1,157 @@
+#First I read the file
+pm0 <- read.table("RD_501_88101_1999-0.txt", comment.char = "#", header = FALSE, sep ="|", na.strings="")
+
+#checking the dimensions
+> dim(pm0)
+[1] 117421     28
+
+#checking the first 10 variables
+> head(pm0)
+  V1 V2 V3 V4 V5    V6 V7 V8  V9 V10      V11   V12
+1 RD  I  1 27  1 88101  1  7 105 120 19990103 00:00
+2 RD  I  1 27  1 88101  1  7 105 120 19990106 00:00
+3 RD  I  1 27  1 88101  1  7 105 120 19990109 00:00
+4 RD  I  1 27  1 88101  1  7 105 120 19990112 00:00
+5 RD  I  1 27  1 88101  1  7 105 120 19990115 00:00
+6 RD  I  1 27  1 88101  1  7 105 120 19990118 00:00
+     V13  V14 V15 V16  V17 V18 V19 V20 V21 V22 V23 V24
+1     NA   AS   3  NA <NA>  NA  NA  NA  NA  NA  NA  NA
+2     NA   AS   3  NA <NA>  NA  NA  NA  NA  NA  NA  NA
+3     NA   AS   3  NA <NA>  NA  NA  NA  NA  NA  NA  NA
+4  8.841 <NA>   3  NA <NA>  NA  NA  NA  NA  NA  NA  NA
+5 14.920 <NA>   3  NA <NA>  NA  NA  NA  NA  NA  NA  NA
+6  3.878 <NA>   3  NA <NA>  NA  NA  NA  NA  NA  NA  NA
+  V25 V26 V27 V28
+1  NA  NA  NA  NA
+2  NA  NA  NA  NA
+3  NA  NA  NA  NA
+4  NA  NA  NA  NA
+5  NA  NA  NA  NA
+6  NA  NA  NA  NA
+
+#my variables don't have any names, so I'm gonna fetch them.
+> cnames <- readLines("RD_501_88101_1999-0.txt", 1)
+> cnames
+#these are the names
+[1] "# RD|Action Code|State Code|County Code|Site ID|Parameter|POC|Sample Duration|Unit|Method|Date|Start Time|Sample Value|Null Data Code|Sampling Frequency|Monitor Protocol (MP) ID|Qualifier - 1|Qualifier - 2|Qualifier - 3|Qualifier - 4|Qualifier - 5|Qualifier - 6|Qualifier - 7|Qualifier - 8|Qualifier - 9|Qualifier - 10|Alternate Method Detectable Limit|Uncertainty"
+
+#now gotta fix the split
+> cnames <- strsplit(cnames, "|", fixed=TRUE)
+> cnames
+[[1]]
+ [1] "# RD"                             
+ [2] "Action Code"                      
+ [3] "State Code"                       
+ [4] "County Code"                      
+ [5] "Site ID"                          
+ [6] "Parameter"                        
+ [7] "POC"                              
+ [8] "Sample Duration"                  
+ [9] "Unit"                             
+[10] "Method"                           
+[11] "Date"                             
+[12] "Start Time"                       
+[13] "Sample Value"                     
+[14] "Null Data Code"                   
+[15] "Sampling Frequency"               
+[16] "Monitor Protocol (MP) ID"         
+[17] "Qualifier - 1"                    
+[18] "Qualifier - 2"                    
+[19] "Qualifier - 3"                    
+[20] "Qualifier - 4"                    
+[21] "Qualifier - 5"                    
+[22] "Qualifier - 6"                    
+[23] "Qualifier - 7"                    
+[24] "Qualifier - 8"                    
+[25] "Qualifier - 9"                    
+[26] "Qualifier - 10"                   
+[27] "Alternate Method Detectable Limit"
+[28] "Uncertainty"
+
+#now to put in the new variables names
+> names(pm0) <- cnames[[1]]
+
+#lets make the variables names a but more valid, without spaces etc.
+> names(pm0) <- make.names(cnames[[1]])
+
+#in this case I only need to look at the pm25 alue, as that is the air pollution I'm interested in.
+> x0 <- pm0$Sample.Value
+#put that into a vector
+
+#checking some basics summaries of the new data x0
+> str(x0)
+ num [1:117421] NA NA NA 8.84 14.92 ...
+> summary(x0)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+   0.00    7.20   11.50   13.74   17.90  157.10   13217 
+> mean(is.na(x0))
+[1] 0.1125608
+# interesting.. 11% of the data is missing.
+
+#reading 2012 data
+> pm1 <- read.table("RD_501_88101_2012-0.txt", comment.char = "#", header = FALSE, sep ="|", na.strings="")
+
+#give the data some names again. I take the same names from the 1999 data, as it is the exact same variables just a different year
+> names(pm1) <- make.names(cnames[[1]])
+
+#now lets compare the basic statistics of the two datasets
+> summary(x1)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+ -10.00    4.00    7.63    9.14   12.00  908.97   73133 
+> summary(x0)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+   0.00    7.20   11.50   13.74   17.90  157.10   13217 
+
+#we see that in the median, there's been a decrease of air pollution for the whole country. Good news!
+
+#creating a boxplot to check on the data
+> boxplot(x0, x1)
+
+#you don't see a lot so let's take a different perspective
+> boxplot(log10(x0), log10(x1))
+Warning messages:
+1: In boxplot.default(log10(x0), log10(x1)) : NaNs produced
+2: In bplt(at[i], wid = width[i], stats = z$stats[, i], out = z$out[z$group ==  :
+  Outlier (-Inf) in boxplot 1 is not drawn
+3: In bplt(at[i], wid = width[i], stats = z$stats[, i], out = z$out[z$group ==  :
+  Outlier (-Inf) in boxplot 2 is not drawn
+  
+# this much better once you run it and visualize.
+#remember when using a log scale even the smallest changes and differences can have a large meaning.
+
+#one interesting this is the negative number of pm2.5. Let's go deeper into this.
+> negative <- x1 < 0
+> str(negative)
+ logi [1:1304287] FALSE FALSE FALSE FALSE FALSE FALSE ...
+ 
+ > sum(negative, na.rm = TRUE)
+[1] 26474
+#this shows there are 26k values below 0. That's strange.
+
+#checking to see the amount in precentage compared to the whole of x1
+> mean(negative, na.rm = TRUE)
+[1] 0.0215034
+#2%!! that's not a lot.
+
+#now checking to see which dates these negative values a recorded
+
+> dates <- pm1$Date
+> str(dates)
+ int [1:1304287] 20120101 20120104 20120107 20120110 20120113 20120116 20120119 20120122 20120125 20120128 ...
+ 
+ #dates in integers? that's not useful. Time to convert them.
+> dates <- as.Date(as.character(dates), "%Y%m%d")
+> str(dates)
+ Date[1:1304287], format: "2012-01-01" "2012-01-04" "2012-01-07" ...
+ 
+#Allright!! this looks great!!
+#using a histogram, let's check for when there's most pm2.5 in 2012
+> hist(dates, "month")
+
+#lets now check for the negative amounts
+> hist(dates[negative], "month")
+#its mainly during the winter the negative measurements find place, so there might be a technical thing going on.
+#as its only 2 % of the data, we do not worry that much about it, and move on. 
+
+
+
