@@ -154,4 +154,111 @@ Warning messages:
 #as its only 2 % of the data, we do not worry that much about it, and move on. 
 
 
+#Looking for a specific monitor now, that both existed in 1999 and 2012 from New York
+
+> site0 <- unique(subset(pm0, State.Code == 36, c(County.Code, Site.ID)))
+> site1 <- unique(subset(pm1, State.Code == 36, c(County.Code, Site.ID)))
+
+#I created a new dataframe with the required information, County code and site ID
+
+#creating a new variable that will paste country code and site id together
+> site0 <- paste(site0[, 1], site0[, 2], sep = ".")
+> site1 <- paste(site1[, 1], site1[, 2], sep = ".")
+
+#doing it for both dataframes
+
+#not it looks like this:
+> str(site0)
+ chr [1:33] "1.5" "1.12" "5.73" "5.80" "5.83" "5.110" "13.11" "27.1004" "29.2" ...
+> str(site1)
+ chr [1:18] "1.5" "1.12" "5.80" "5.133" "13.11" "29.5" "31.3" "47.122"
+ 
+ #interestingly enough, the 1999 dataset has 33 combinations where county code and site ID match
+ # now we want to see which county code and site id matches in both datasets, 1999 and 2012
+ 
+ #I'm using intersect here and put them in the dataframe "both"
+> both <- intersect(site0, site1)
+
+#looking at both we can see there are 10 points that match
+> both
+ [1] "1.5"     "1.12"    "5.80"    "13.11"   "29.5"    "31.3"    "63.2008"
+ [8] "67.1015" "85.55"   "101.3"
+ 
+ #now we need one monitor that both matches the two periods, and has a lot of observations
+ #So I put in the information I have into the real datasets
+> pm0$county.site <- with(pm0, paste(County.Code, Site.ID, sep="."))
+> pm1$county.site <- with(pm1, paste(County.Code, Site.ID, sep="."))
+
+#and then I will subset that information and put it in a new dataframe, again only for New York state
+> cnt0 <- subset(pm0, State.Code ==36 & county.site %in% both)
+> cnt1 <- subset(pm1, State.Code ==36 & county.site %in% both)
+
+#Now I want to split this dataframe to look at each individual monitor
+
+> sapply(split(cnt0, cnt0$county.site), nrow)
+   1.12     1.5   101.3   13.11    29.5    31.3    5.80 63.2008 67.1015   85.55 
+     61     122     152      61      61     183      61     122     122       7 
+# I can now see how many rows there are for each county in NY state
+# county 1.12 (12 is for site ID) had 61 observations
+
+#Doing it for both datasets
+> sapply(split(cnt1, cnt1$county.site), nrow)
+   1.12     1.5   101.3   13.11    29.5    31.3    5.80 63.2008 67.1015   85.55 
+     31      64      31      31      33      15      31      30      31      31
+#there's a difference in observations between each monitor 
+
+#let's focus on a monitor - let's pick 63.2008 (county 68, site 2008).
+> pm1sub <- subset(pm1, State.Code == 36 & County.Code == 63 & Site.ID == 2008)
+> pm0sub <- subset(pm0, State.Code == 36 & County.Code == 63 & Site.ID == 2008)
+> dim(pm1sub)
+[1] 30 29
+> dim(pm0sub)
+[1] 122  29
+
+#Time to play around with some dates
+#Let's see if the levels of pm2.5 is going up or down in a certain period of time.
+#I take the dates from the original dataset, and plot them into dates1
+> dates1 <- pm1sub$Date
+#I then take the values of pm2.5 and create a dataframe with the data
+> x1sub <- pm1sub$Sample.Value
+
+#looking at data vs pm2.5 plot, the dates don't look so good. They're in an integer format
+> plot(dates1, x1sub)
+
+#time to format the dates1
+> dates1 <- as.Date(as.character(dates1), "%Y%m%d")
+
+#now the plot looks a lot better
+> plot(dates1, x1sub)
+
+#doing the same for 1999 data
+> dates0 <- pm0sub$Date
+> x0sub <- pm0sub$Sample.Value
+> dates0 <- as.Date(as.character(dates0), "%Y%m%d")
+> plot(dates0, x0sub)
+
+#now lets play around and try to compare the plots.
+> plot(dates0, x0sub, pch =20)
+> abline(h=median(x0sub, na.rm=T))
+> plot(dates1, x1sub, pch =20)
+> abline(h=median(x1sub, na.rm=T))
+
+#there's a problem here. The Y-axis on the 1999 data starts at 0 and goes to 40
+#while the Y-axis on 2012 dataset starts at 0 but goes to 14. Let's even this out.
+
+> range(x0sub, x1sub, na.rm=T)
+[1]  3.0 40.1
+#we see here that the range goes from 3 to 40 for the datasets combined
+
+#putting that into a dataframe now and plottig again
+> rng <- range(x0sub, x1sub, na.rm=T)
+
+> plot(dates0, x0sub, pch =20, ylim = rng)
+> abline(h=median(x0sub, na.rm=T))
+> plot(dates1, x1sub, pch =20, ylim = rng)
+> abline(h=median(x1sub, na.rm=T))
+
+#now the Y-axis for both are even
+
+#the averages values are falling down, and the large spikes have gone as well. 
 
