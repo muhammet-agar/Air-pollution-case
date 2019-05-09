@@ -262,3 +262,68 @@ Warning messages:
 
 #the averages values are falling down, and the large spikes have gone as well. 
 
+#Now let's go a step backwards. Let us take a look at different states.
+#creating a value that takes the average pm2.5 for each state for the year 1999
+#the tapply function takes care of this
+
+> mn0 <- with(pm0, tapply(Sample.Value, State.Code, mean, na.rm = T))
+> str(mn0)
+ num [1:53(1d)] 19.96 6.67 10.8 15.68 17.66 ...
+ - attr(*, "dimnames")=List of 1
+  ..$ : chr [1:53] "1" "2" "4" "5" ...
+  
+  > summary(mn0)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  4.862   9.519  12.315  12.406  15.640  19.956 
+  
+  #doing the same for 2012 data
+  
+ > mn1 <- with(pm1, tapply(Sample.Value, State.Code, mean, na.rm = T))
+ > summary(mn1)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  4.006   7.355   8.729   8.759  10.613  11.992
+  
+  #we already see a difference in means etc.
+  #I need to create a data.frame for each year including the data State.Code and Sample.Value mean
+  
+  #now lets check the dataframe
+  > head(d0)
+  state      mean
+1     1 19.956391
+2     2  6.665929
+4     4 10.795547
+5     5 15.676067
+6     6 17.655412
+8     8  7.533304
+
+#now lets merge these data frames by state name
+> mrg <- merge(d0,d1, by = "state")
+
+#checking to see the data
+> dim(mrg)
+[1] 52  3
+
+> head(mrg)
+  state    mean.x    mean.y
+1     1 19.956391 10.126190
+2    10 14.492895 11.236059
+3    11 15.786507 11.991697
+4    12 11.137139  8.239690
+5    13 19.943240 11.321364
+6    15  4.861821  8.749336
+
+#mean.x is the 1999 data, mean.y is the 2012 data
+#let's plot the data now
+> par(mfrow = c(1,1))
+> with(mrg, plot(rep(1999, 52), mrg[, 2], xlim = c(1998, 2013)))
+> with(mrg, points(rep(2012, 52), mrg[, 3]))
+ 
+#this looks promising, time to draw the line.
+> segments(rep(1999, 52), mrg[,2], rep(2012, 52), mrg[,3])
+
+#Annnnnd there you have it
+#some states have gone up, some gone down
+#some are off the chart, i forgot to add the ylim :/
+#some states have barely moved at all
+
+
